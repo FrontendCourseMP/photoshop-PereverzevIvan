@@ -3,7 +3,8 @@ import { detectImageFormat } from "../../utils/ImageTypeGetter";
 import { loadGB7Image, loadStandardImage } from "../../utils/loadImage";
 import { getColorDepthOfImage } from "../../utils/ColorDepthGetter";
 import { resizeImageByMethod } from "../../utils/resize";
-import { findClosestScaleBelow, scaleImage } from "../../utils/scaleImage";
+import { scaleImage } from "../../utils/scaleImage";
+import { useLayers } from "../LayersContext/LayersContext";
 
 export type ImageContextProps = {
   canvasRef: React.RefObject<HTMLCanvasElement | null> | null;
@@ -76,6 +77,8 @@ export function ImageProvider({ children }: { children: React.ReactNode }) {
     "normal",
   );
 
+  const { layers, activeLayerId, setOriginalImageData } = useLayers();
+
   // Очистка изображения
   function clearImage() {
     const canvas = canvasRef?.current;
@@ -102,7 +105,7 @@ export function ImageProvider({ children }: { children: React.ReactNode }) {
     try {
       fileType = await detectImageFormat(file);
     } catch (error) {
-      alert("Произошла ошибка при загрузке изображения: " + error);
+      alert("Ошибка при определении формата изображения: " + error);
       return;
     }
 
@@ -112,7 +115,7 @@ export function ImageProvider({ children }: { children: React.ReactNode }) {
       newImageData = await loadStandardImage(file);
     else if (fileType === "graybit-7") newImageData = await loadGB7Image(file);
     else {
-      alert("Неподдерживаемый формат изображения");
+      alert("Неподдерживаемый формат изображения");
       return;
     }
 
@@ -121,34 +124,13 @@ export function ImageProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    const canvas = canvasRef?.current;
-    if (!canvas) {
-      alert("Canvas не найден");
+    if (activeLayerId === null || !layers[activeLayerId]) {
+      alert("Активный слой не найден");
       return;
     }
 
-    const closestScale = findClosestScaleBelow(
-      canvas.width,
-      canvas.height,
-      newImageData.width,
-      newImageData.height,
-    );
-
-    const scale = await scaleImage({
-      canvas,
-      imageData: newImageData,
-      scale: closestScale,
-    });
-
-    if (!scale.scaledImageData) {
-      alert("Не удалось изменить размер изображения при загрузке");
-      return;
-    }
-
-    setImageData(newImageData);
-    setWidth(newImageData.width);
-    setHeight(newImageData.height);
-    setScaleValue(closestScale);
+    setOriginalImageData(activeLayerId, newImageData); // ← Заменяем изображение в активном слое
+    console.log("load image");
 
     const depth = await getColorDepthOfImage(file, fileType);
     if (depth) setColorDepth(depth);
@@ -160,8 +142,16 @@ export function ImageProvider({ children }: { children: React.ReactNode }) {
     newHeight: number,
     method: "nearest" | "bilinear",
   ) {
+    if (activeLayerId === null || !layers[activeLayerId]) {
+      alert("Активный слой не найден");
+      return;
+    }
+
+    const layerImage = layers[activeLayerId]?.originalImageData;
+    if (!layerImage) return;
+
     const newImageData = await resizeImageByMethod(
-      imageData,
+      layerImage,
       newWidth,
       newHeight,
       method,
@@ -172,9 +162,7 @@ export function ImageProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    setImageData(newImageData);
-    setWidth(newImageData.width);
-    setHeight(newImageData.height);
+    setOriginalImageData(activeLayerId, newImageData);
   }
 
   async function drawImageOnCanvas(data: ImageData, offsetX = 0, offsetY = 0) {
@@ -187,35 +175,72 @@ export function ImageProvider({ children }: { children: React.ReactNode }) {
         ctx.putImageData(data, offsetX, offsetY);
       }
     } else {
-      alert("Canvas не найден");
+      alert("Canvas не найден");
     }
   }
 
+  function mergeLayers(): ImageData | null {
+    const images = layers
+      .map((l) => l.originalImageData)
+      .filter(Boolean) as ImageData[];
+
+    console.log("in merge", images);
+
+    if (images.length === 0) return null;
+
+    // const base = images[0];
+    const maxWidth = Math.max(...images.map((img) => img.width));
+    const maxHeight = Math.max(...images.map((img) => img.height));
+
+    const canvas = document.createElement("canvas");
+    canvas.width = maxWidth;
+    canvas.height = maxHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+
+    images.forEach((img, i) => {
+      const offX = i === 0 ? 0 : Math.floor((maxWidth - img.width) / 2);
+      const offY = i === 0 ? 0 : Math.floor((maxHeight - img.height) / 2);
+      ctx.putImageData(img, offX, offY);
+    });
+
+    return ctx.getImageData(0, 0, maxWidth, maxHeight);
+  }
+
+  useEffect(() => {
+    console.log("merge layers");
+    const merged = mergeLayers();
+    if (!merged || !canvasRef?.current) return;
+
+    setImageData(merged);
+    setWidth(merged.width);
+    setHeight(merged.height);
+  }, [layers]);
+
   useEffect(() => {
     async function scale() {
-      if (!imageData) return;
-
-      const canvas = canvasRef?.current;
-      if (!canvas) return;
+      if (!imageData || !canvasRef?.current) return;
 
       const scale = await scaleImage({
-        canvas: canvas,
-        imageData: imageData,
+        canvas: canvasRef.current,
+        imageData,
         scale: scaleValue,
       });
 
-      if (!scale) return;
+      if (!scale || !scale.scaledImageData) return;
       setScalledImageData(scale.scaledImageData);
       setOffsetX(scale.imageOffsetX);
       setOffsetY(scale.imageOffsetY);
     }
 
     scale();
-  }, [imageData, scaleValue]);
+    console.log("scale image");
+  }, [imageData, scaleValue, canvasRef]);
 
   useEffect(() => {
     if (scalledImageData) {
       drawImageOnCanvas(scalledImageData, offsetX, offsetY);
+      console.log("draw image on canvas");
     }
   }, [scalledImageData, offsetX, offsetY]);
 
