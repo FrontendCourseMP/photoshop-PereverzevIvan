@@ -181,7 +181,7 @@ export function ImageProvider({ children }: { children: React.ReactNode }) {
 
   function mergeLayers(): ImageData | null {
     const images = layers
-      .map((l) => l.originalImageData)
+      .map((l) => l.editedImageData)
       .filter(Boolean) as ImageData[];
 
     console.log("in merge", images);

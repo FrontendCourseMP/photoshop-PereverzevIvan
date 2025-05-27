@@ -11,8 +11,11 @@ export function newEmptyLayer(): TLayer {
     offsetY: 0,
     blendMode: "normal",
     opacity: 1,
-    hasAlphaChannel: false,
-    alphaChannelVisible: false,
+    hasAlphaChannel: true,
+    alphaChannelVisible: true,
+    visible: true,
+    preview: "",
+    alphaChannelPreview: "",
   };
 }
 
@@ -26,6 +29,9 @@ export type TLayer = {
   opacity: number; // 0–1
   hasAlphaChannel: boolean;
   alphaChannelVisible: boolean;
+  visible: boolean;
+  preview: string;
+  alphaChannelPreview: string;
 };
 
 type LayersContextType = {
@@ -41,6 +47,7 @@ type LayersContextType = {
   deleteAlphaChannel: (id: number) => void;
   changeBlendMode: (id: number, mode: BlendMode) => void;
   moveLayer: (fromIndex: number, toIndex: number) => void;
+  setVisible: (id: number, visible: boolean) => void;
 };
 
 const LayersContext = createContext<LayersContextType | undefined>(undefined);
@@ -96,10 +103,26 @@ export const LayersProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const setOriginalImageData = (id: number, data: ImageData) => {
+    const preview = getImagePreview(data);
+    const alphaPreview = generateAlphaPreview(data);
+
     setLayers((prev) =>
-      prev.map((l) => (l.id === id ? { ...l, originalImageData: data } : l)),
+      prev.map((l) =>
+        l.id === id
+          ? {
+              ...l,
+              originalImageData: data,
+              editedImageData: data,
+              preview,
+              alphaChannelPreview: alphaPreview,
+            }
+          : l,
+      ),
     );
-    setActiveLayerId((prev) => prev + 1);
+  };
+
+  const setVisible = (id: number, visible: boolean) => {
+    setLayers((prev) => prev.map((l) => (l.id === id ? { ...l, visible } : l)));
   };
 
   const setOpacity = (id: number, opacity: number) => {
@@ -159,13 +182,8 @@ export const LayersProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   useEffect(() => {
-    console.log("layers", layers);
+    console.log(layers);
   }, [layers]);
-
-  useEffect(() => {
-    addLayer(newEmptyLayer());
-    addLayer(newEmptyLayer());
-  }, []);
 
   return (
     <LayersContext.Provider
@@ -181,6 +199,7 @@ export const LayersProvider: React.FC<{ children: React.ReactNode }> = ({
         setActiveLayerId,
         setOriginalImageData,
         moveLayer,
+        setVisible,
       }}
     >
       {children}
@@ -197,4 +216,39 @@ function removeAlphaFromCopy(imageData: ImageData | null): ImageData {
     data[i + 3] = 255;
   }
   return new ImageData(data, imageData.width, imageData.height);
+}
+
+function getImagePreview(imageData: ImageData): string {
+  const canvas = document.createElement("canvas");
+  canvas.width = imageData.width;
+  canvas.height = imageData.height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas 2D context not supported");
+  ctx.putImageData(imageData, 0, 0);
+  return canvas.toDataURL();
+}
+
+function generateAlphaPreview(imageData: ImageData): string {
+  const { width, height, data } = imageData;
+  const alphaCanvas = document.createElement("canvas");
+  alphaCanvas.width = width;
+  alphaCanvas.height = height;
+
+  const ctx = alphaCanvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas 2D context not supported");
+
+  const alphaImageData = ctx.createImageData(width, height);
+  const alphaData = alphaImageData.data;
+
+  // Преобразуем альфу в серую картинку
+  for (let i = 0; i < data.length; i += 4) {
+    const alpha = data[i + 3]; // значение альфа-канала
+    alphaData[i] = alpha; // R
+    alphaData[i + 1] = alpha; // G
+    alphaData[i + 2] = alpha; // B
+    alphaData[i + 3] = 255; // Полностью непрозрачный пиксель
+  }
+
+  ctx.putImageData(alphaImageData, 0, 0);
+  return alphaCanvas.toDataURL("image/png");
 }
