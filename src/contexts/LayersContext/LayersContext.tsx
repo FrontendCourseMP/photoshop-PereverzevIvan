@@ -16,6 +16,7 @@ export function newEmptyLayer(): TLayer {
     visible: true,
     preview: "",
     alphaChannelPreview: "",
+    colorDepth: 0,
   };
 }
 
@@ -23,6 +24,7 @@ export type TLayer = {
   id: number;
   originalImageData: ImageData | null;
   editedImageData: ImageData | null;
+  colorDepth: number;
   offsetX: number;
   offsetY: number;
   blendMode: BlendMode;
@@ -48,6 +50,8 @@ type LayersContextType = {
   changeBlendMode: (id: number, mode: BlendMode) => void;
   moveLayer: (fromIndex: number, toIndex: number) => void;
   setVisible: (id: number, visible: boolean) => void;
+  setColorDepth: (id: number, depth: number) => void;
+  fillLayerWithColor: (id: number, color: string) => void;
 };
 
 const LayersContext = createContext<LayersContextType | undefined>(undefined);
@@ -80,6 +84,12 @@ export const LayersProvider: React.FC<{ children: React.ReactNode }> = ({
       return updatedLayers;
     });
   };
+
+  function setColorDepth(id: number, depth: number) {
+    setLayers((prev) =>
+      prev.map((l) => (l.id === id ? { ...l, colorDepth: depth } : l)),
+    );
+  }
 
   const removeLayer = (id: number) => {
     setLayers((prev) => {
@@ -148,6 +158,33 @@ export const LayersProvider: React.FC<{ children: React.ReactNode }> = ({
     );
   };
 
+  function fillLayerWithColor(id: number, color: string) {
+    setLayers((prevLayers) => {
+      return prevLayers.map((layer) => {
+        if (layer.id !== id || !layer.originalImageData) return layer;
+
+        const { width, height, data } = layer.originalImageData;
+        const newImageData = new ImageData(width, height);
+        const rgba = hexToRgba(color);
+
+        for (let i = 0; i < data.length; i += 4) {
+          const alpha = data[i + 3];
+          newImageData.data[i] = rgba[0];
+          newImageData.data[i + 1] = rgba[1];
+          newImageData.data[i + 2] = rgba[2];
+          newImageData.data[i + 3] = alpha;
+        }
+
+        return {
+          ...layer,
+          editedImageData: newImageData,
+          preview: getImagePreview(newImageData),
+          alphaChannelPreview: generateAlphaPreview(newImageData),
+        };
+      });
+    });
+  }
+
   const deleteAlphaChannel = (id: number) => {
     setLayers((prev) =>
       prev.map((l) => {
@@ -200,6 +237,8 @@ export const LayersProvider: React.FC<{ children: React.ReactNode }> = ({
         setOriginalImageData,
         moveLayer,
         setVisible,
+        setColorDepth,
+        fillLayerWithColor,
       }}
     >
       {children}
@@ -251,4 +290,20 @@ function generateAlphaPreview(imageData: ImageData): string {
 
   ctx.putImageData(alphaImageData, 0, 0);
   return alphaCanvas.toDataURL("image/png");
+}
+
+function hexToRgba(hex: string): [number, number, number, number] {
+  let cleanHex = hex.replace("#", "");
+  if (cleanHex.length === 3) {
+    cleanHex = cleanHex
+      .split("")
+      .map((ch) => ch + ch)
+      .join("");
+  }
+
+  const r = parseInt(cleanHex.substring(0, 2), 16);
+  const g = parseInt(cleanHex.substring(2, 4), 16);
+  const b = parseInt(cleanHex.substring(4, 6), 16);
+
+  return [r, g, b, 255];
 }

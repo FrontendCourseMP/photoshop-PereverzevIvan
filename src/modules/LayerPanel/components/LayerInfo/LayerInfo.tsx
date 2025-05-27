@@ -33,7 +33,7 @@ export function LayerInfo(props: TLayerInfoProps) {
       })}
     >
       {/* Название слоя */}
-      <p className={s.LayerName}>Слой номер {props.layer.id}</p>
+      <p className={s.LayerName}>Слой №{props.layer.id}</p>
 
       <button onClick={() => setActiveLayerId(props.layer.id)}>Выбрать</button>
 
@@ -95,7 +95,9 @@ export function LayerInfo(props: TLayerInfoProps) {
             onClick={() => toggleAlphaVisibility(props.layer.id)}
             className={s.hideAlpha}
           >
-            Скрыть альфа-канал
+            {!props.layer.alphaChannelVisible
+              ? "Показать альфа-канал"
+              : "Скрыть альфа-канал"}
           </button>
           <button
             onClick={() => deleteAlphaChannel(props.layer.id)}

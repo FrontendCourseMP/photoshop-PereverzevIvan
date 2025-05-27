@@ -4,11 +4,14 @@ import { ActionsGroup } from "./components/ActionGroup/ActionsGroup";
 import { ImageContext } from "../../contexts/ImageContext/ImageContext";
 import { open_icon } from "../../assets/images";
 import { InterpolationModal } from "./components/ImterpolationModal/InterpolationModal";
+import { FillImageColorModal } from "./components/FillImageColorModal/FillImageColorModal";
 
 export function ActionsMenu() {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const { loadImage, clearImage } = useContext(ImageContext);
   const [isOpenInterpolation, setIsOpenInterpolation] = useState(false);
+  const [isOpenFillLayerWithColor, setIsOpenFillLayerWithColor] =
+    useState(false);
 
   function handleFileOpen() {
     if (inputRef.current) inputRef.current.click();
@@ -38,7 +41,7 @@ export function ActionsMenu() {
       ],
     },
     {
-      title: "Холст",
+      title: "Слой",
       items: [
         {
           text: "Интерполяция",
@@ -48,9 +51,9 @@ export function ActionsMenu() {
           },
         },
         {
-          text: "Очистить холст",
+          text: "Заливка цветом",
           onClick: () => {
-            clearImage();
+            setIsOpenFillLayerWithColor(true);
           },
         },
       ],
@@ -65,6 +68,10 @@ export function ActionsMenu() {
         accept=".png,.jpg,.jpeg,.gb7"
         style={{ display: "none" }}
         onChange={handleFileChange}
+      />
+      <FillImageColorModal
+        isOpen={isOpenFillLayerWithColor}
+        onClose={() => setIsOpenFillLayerWithColor(false)}
       />
       <InterpolationModal
         isOpen={isOpenInterpolation}

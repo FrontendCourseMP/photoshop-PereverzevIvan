@@ -3,7 +3,7 @@ import { detectImageFormat } from "../../utils/ImageTypeGetter";
 import { loadGB7Image, loadStandardImage } from "../../utils/loadImage";
 import { getColorDepthOfImage } from "../../utils/ColorDepthGetter";
 import { resizeImageByMethod } from "../../utils/resize";
-import { scaleImage } from "../../utils/scaleImage";
+import { findClosestScaleBelow, scaleImage } from "../../utils/scaleImage";
 import { useLayers } from "../LayersContext/LayersContext";
 
 export type ImageContextProps = {
@@ -77,7 +77,12 @@ export function ImageProvider({ children }: { children: React.ReactNode }) {
     "normal",
   );
 
-  const { layers, activeLayerId, setOriginalImageData } = useLayers();
+  const {
+    layers,
+    activeLayerId,
+    setOriginalImageData,
+    setColorDepth: setLayerColorDepth,
+  } = useLayers();
 
   // Очистка изображения
   function clearImage() {
@@ -129,11 +134,23 @@ export function ImageProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    const canvas = canvasRef?.current;
+    if (canvas) {
+      setScaleValue(
+        findClosestScaleBelow(
+          canvas.width,
+          canvas.height,
+          newImageData.width,
+          newImageData.height,
+        ),
+      );
+    }
+
     setOriginalImageData(activeLayerId, newImageData); // ← Заменяем изображение в активном слое
     console.log("load image");
 
     const depth = await getColorDepthOfImage(file, fileType);
-    if (depth) setColorDepth(depth);
+    if (depth) setLayerColorDepth(activeLayerId, depth);
   }
 
   // Изменение размера изображения
@@ -180,31 +197,76 @@ export function ImageProvider({ children }: { children: React.ReactNode }) {
   }
 
   function mergeLayers(): ImageData | null {
-    const images = layers
-      .map((l) => l.editedImageData)
-      .filter(Boolean) as ImageData[];
+    const visibleLayers = layers.filter(
+      (l) => l.visible && l.editedImageData,
+    ) as {
+      editedImageData: ImageData;
+      blendMode: BlendMode;
+    }[];
 
-    console.log("in merge", images);
+    if (visibleLayers.length === 0) {
+      return new ImageData(600, 600);
+    }
 
-    if (images.length === 0) return null;
+    const maxWidth = Math.max(
+      ...visibleLayers.map((l) => l.editedImageData.width),
+    );
+    const maxHeight = Math.max(
+      ...visibleLayers.map((l) => l.editedImageData.height),
+    );
 
-    // const base = images[0];
-    const maxWidth = Math.max(...images.map((img) => img.width));
-    const maxHeight = Math.max(...images.map((img) => img.height));
+    const result = new ImageData(maxWidth, maxHeight);
 
-    const canvas = document.createElement("canvas");
-    canvas.width = maxWidth;
-    canvas.height = maxHeight;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return null;
+    for (let i = 0; i < visibleLayers.length; i++) {
+      const { editedImageData, blendMode } = visibleLayers[i];
+      const layerData = editedImageData.data;
+      const offsetX =
+        i === 0 ? 0 : Math.floor((maxWidth - editedImageData.width) / 2);
+      const offsetY =
+        i === 0 ? 0 : Math.floor((maxHeight - editedImageData.height) / 2);
 
-    images.forEach((img, i) => {
-      const offX = i === 0 ? 0 : Math.floor((maxWidth - img.width) / 2);
-      const offY = i === 0 ? 0 : Math.floor((maxHeight - img.height) / 2);
-      ctx.putImageData(img, offX, offY);
-    });
+      for (let y = 0; y < editedImageData.height; y++) {
+        for (let x = 0; x < editedImageData.width; x++) {
+          const srcIndex = (y * editedImageData.width + x) * 4;
+          const dstX = x + offsetX;
+          const dstY = y + offsetY;
 
-    return ctx.getImageData(0, 0, maxWidth, maxHeight);
+          if (dstX < 0 || dstX >= maxWidth || dstY < 0 || dstY >= maxHeight)
+            continue;
+
+          const dstIndex = (dstY * maxWidth + dstX) * 4;
+
+          const [r1, g1, b1, a1] = [
+            result.data[dstIndex],
+            result.data[dstIndex + 1],
+            result.data[dstIndex + 2],
+            result.data[dstIndex + 3] / 255,
+          ];
+          const [r2, g2, b2, a2] = [
+            layerData[srcIndex],
+            layerData[srcIndex + 1],
+            layerData[srcIndex + 2],
+            layerData[srcIndex + 3] / 255,
+          ];
+
+          const blended = applyBlendMode(
+            [r1, g1, b1],
+            [r2, g2, b2],
+            a1,
+            a2,
+            blendMode,
+          );
+          const outAlpha = a2 + a1 * (1 - a2);
+
+          result.data[dstIndex] = blended[0];
+          result.data[dstIndex + 1] = blended[1];
+          result.data[dstIndex + 2] = blended[2];
+          result.data[dstIndex + 3] = Math.round(outAlpha * 255);
+        }
+      }
+    }
+
+    return result;
   }
 
   useEffect(() => {
@@ -215,7 +277,7 @@ export function ImageProvider({ children }: { children: React.ReactNode }) {
     setImageData(merged);
     setWidth(merged.width);
     setHeight(merged.height);
-  }, [layers]);
+  }, [setOriginalImageData]);
 
   useEffect(() => {
     async function scale() {
@@ -275,4 +337,37 @@ export function ImageProvider({ children }: { children: React.ReactNode }) {
 
 export function useImageContext() {
   return useContext(ImageContext);
+}
+
+type RGB = [number, number, number];
+type BlendMode = "normal" | "multiply" | "screen" | "overlay";
+
+function applyBlendMode(
+  base: RGB,
+  top: RGB,
+  baseAlpha: number,
+  topAlpha: number,
+  mode: BlendMode,
+): RGB {
+  const blend = (cb: number, ct: number): number => {
+    switch (mode) {
+      case "multiply":
+        return (cb * ct) / 255;
+      case "screen":
+        return 255 - ((255 - cb) * (255 - ct)) / 255;
+      case "overlay":
+        return cb < 128
+          ? (2 * cb * ct) / 255
+          : 255 - (2 * (255 - cb) * (255 - ct)) / 255;
+      case "normal":
+      default:
+        return ct;
+    }
+  };
+
+  const r = (1 - topAlpha) * base[0] + topAlpha * blend(base[0], top[0]);
+  const g = (1 - topAlpha) * base[1] + topAlpha * blend(base[1], top[1]);
+  const b = (1 - topAlpha) * base[2] + topAlpha * blend(base[2], top[2]);
+
+  return [r, g, b].map((v) => Math.round(v)) as RGB;
 }
