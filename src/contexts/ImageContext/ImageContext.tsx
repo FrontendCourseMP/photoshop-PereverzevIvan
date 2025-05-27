@@ -202,6 +202,7 @@ export function ImageProvider({ children }: { children: React.ReactNode }) {
     ) as {
       editedImageData: ImageData;
       blendMode: BlendMode;
+      opacity: number;
     }[];
 
     if (visibleLayers.length === 0) {
@@ -218,16 +219,17 @@ export function ImageProvider({ children }: { children: React.ReactNode }) {
     const result = new ImageData(maxWidth, maxHeight);
 
     for (let i = 0; i < visibleLayers.length; i++) {
-      const { editedImageData, blendMode } = visibleLayers[i];
+      const { editedImageData, blendMode, opacity } = visibleLayers[i];
       const layerData = editedImageData.data;
-      const offsetX =
-        i === 0 ? 0 : Math.floor((maxWidth - editedImageData.width) / 2);
-      const offsetY =
-        i === 0 ? 0 : Math.floor((maxHeight - editedImageData.height) / 2);
+      const layerWidth = editedImageData.width;
+      const layerHeight = editedImageData.height;
 
-      for (let y = 0; y < editedImageData.height; y++) {
-        for (let x = 0; x < editedImageData.width; x++) {
-          const srcIndex = (y * editedImageData.width + x) * 4;
+      const offsetX = Math.floor((maxWidth - layerWidth) / 2);
+      const offsetY = Math.floor((maxHeight - layerHeight) / 2);
+
+      for (let y = 0; y < layerHeight; y++) {
+        for (let x = 0; x < layerWidth; x++) {
+          const srcIndex = (y * layerWidth + x) * 4;
           const dstX = x + offsetX;
           const dstY = y + offsetY;
 
@@ -236,31 +238,29 @@ export function ImageProvider({ children }: { children: React.ReactNode }) {
 
           const dstIndex = (dstY * maxWidth + dstX) * 4;
 
-          const [r1, g1, b1, a1] = [
-            result.data[dstIndex],
-            result.data[dstIndex + 1],
-            result.data[dstIndex + 2],
-            result.data[dstIndex + 3] / 255,
-          ];
-          const [r2, g2, b2, a2] = [
-            layerData[srcIndex],
-            layerData[srcIndex + 1],
-            layerData[srcIndex + 2],
-            layerData[srcIndex + 3] / 255,
-          ];
+          const dstR = result.data[dstIndex];
+          const dstG = result.data[dstIndex + 1];
+          const dstB = result.data[dstIndex + 2];
+          const dstA = result.data[dstIndex + 3] / 255;
 
-          const blended = applyBlendMode(
-            [r1, g1, b1],
-            [r2, g2, b2],
-            a1,
-            a2,
+          const srcR = layerData[srcIndex];
+          const srcG = layerData[srcIndex + 1];
+          const srcB = layerData[srcIndex + 2];
+          const srcA = (layerData[srcIndex + 3] / 255) * (opacity ?? 1);
+
+          const outAlpha = srcA + dstA * (1 - srcA);
+          if (outAlpha === 0) continue;
+
+          const [blendedR, blendedG, blendedB] = applyBlendMode(
+            [dstR, dstG, dstB],
+            [srcR, srcG, srcB],
+            srcA,
             blendMode,
           );
-          const outAlpha = a2 + a1 * (1 - a2);
 
-          result.data[dstIndex] = blended[0];
-          result.data[dstIndex + 1] = blended[1];
-          result.data[dstIndex + 2] = blended[2];
+          result.data[dstIndex] = blendedR;
+          result.data[dstIndex + 1] = blendedG;
+          result.data[dstIndex + 2] = blendedB;
           result.data[dstIndex + 3] = Math.round(outAlpha * 255);
         }
       }
@@ -345,7 +345,6 @@ type BlendMode = "normal" | "multiply" | "screen" | "overlay";
 function applyBlendMode(
   base: RGB,
   top: RGB,
-  baseAlpha: number,
   topAlpha: number,
   mode: BlendMode,
 ): RGB {
