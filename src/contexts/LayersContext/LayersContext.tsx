@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 
 type BlendMode = "normal" | "multiply" | "screen" | "overlay";
 
+/** создание пустого слоя */
 export function newEmptyLayer(): TLayer {
   return {
     id: 0,
@@ -17,9 +18,11 @@ export function newEmptyLayer(): TLayer {
     preview: "",
     alphaChannelPreview: "",
     colorDepth: 0,
+    isGrayscale: false,
   };
 }
 
+/** Тип слоя */
 export type TLayer = {
   id: number;
   originalImageData: ImageData | null;
@@ -34,6 +37,7 @@ export type TLayer = {
   visible: boolean;
   preview: string;
   alphaChannelPreview: string;
+  isGrayscale: boolean;
 };
 
 type LayersContextType = {
@@ -52,6 +56,7 @@ type LayersContextType = {
   setVisible: (id: number, visible: boolean) => void;
   setColorDepth: (id: number, depth: number) => void;
   fillLayerWithColor: (id: number, color: string) => void;
+  setIsGrayscale: (id: number, isGrayscale: boolean) => void;
 };
 
 const LayersContext = createContext<LayersContextType | undefined>(undefined);
@@ -158,6 +163,13 @@ export const LayersProvider: React.FC<{ children: React.ReactNode }> = ({
     );
   };
 
+  function setIsGrayscale(id: number, isGrayscale: boolean) {
+    console.log(isGrayscale);
+    setLayers((prev) =>
+      prev.map((l) => (l.id === id ? { ...l, isGrayscale } : l)),
+    );
+  }
+
   function fillLayerWithColor(id: number, color: string) {
     setLayers((prevLayers) => {
       return prevLayers.map((layer) => {
@@ -177,6 +189,7 @@ export const LayersProvider: React.FC<{ children: React.ReactNode }> = ({
 
         return {
           ...layer,
+          originalImageData: newImageData,
           editedImageData: newImageData,
           preview: getImagePreview(newImageData),
           alphaChannelPreview: generateAlphaPreview(newImageData),
@@ -196,6 +209,7 @@ export const LayersProvider: React.FC<{ children: React.ReactNode }> = ({
           alphaChannelVisible: false,
           originalImageData: newImageData,
           editedImageData: newImageData,
+          preview: getImagePreview(newImageData),
         };
       }),
     );
@@ -239,6 +253,7 @@ export const LayersProvider: React.FC<{ children: React.ReactNode }> = ({
         setVisible,
         setColorDepth,
         fillLayerWithColor,
+        setIsGrayscale,
       }}
     >
       {children}

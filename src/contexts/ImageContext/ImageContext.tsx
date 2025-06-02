@@ -5,6 +5,7 @@ import { getColorDepthOfImage } from "../../utils/ColorDepthGetter";
 import { resizeImageByMethod } from "../../utils/resize";
 import { findClosestScaleBelow, scaleImage } from "../../utils/scaleImage";
 import { useLayers } from "../LayersContext/LayersContext";
+import { isGrayscaleImage } from "../../utils/isGrayscale";
 
 export type ImageContextProps = {
   canvasRef: React.RefObject<HTMLCanvasElement | null> | null;
@@ -82,6 +83,7 @@ export function ImageProvider({ children }: { children: React.ReactNode }) {
     activeLayerId,
     setOriginalImageData,
     setColorDepth: setLayerColorDepth,
+    setIsGrayscale,
   } = useLayers();
 
   // Очистка изображения
@@ -147,10 +149,14 @@ export function ImageProvider({ children }: { children: React.ReactNode }) {
     }
 
     setOriginalImageData(activeLayerId, newImageData); // ← Заменяем изображение в активном слое
-    console.log("load image");
 
     const depth = await getColorDepthOfImage(file, fileType);
     if (depth) setLayerColorDepth(activeLayerId, depth);
+
+    const isGrayscale = isGrayscaleImage(newImageData);
+    setIsGrayscale(activeLayerId, isGrayscale);
+
+    console.log("load image");
   }
 
   // Изменение размера изображения
