@@ -157,6 +157,8 @@ export const LayersProvider: React.FC<{ children: React.ReactNode }> = ({
         return {
           ...l,
           alphaChannelVisible: alphaVisible,
+          alphaChannelPreview: generateAlphaPreview(editedImageData),
+          preview: getImagePreview(editedImageData),
           editedImageData,
         };
       }),
@@ -210,6 +212,7 @@ export const LayersProvider: React.FC<{ children: React.ReactNode }> = ({
           originalImageData: newImageData,
           editedImageData: newImageData,
           preview: getImagePreview(newImageData),
+          alphaChannelPreview: generateAlphaPreview(newImageData),
         };
       }),
     );
@@ -272,7 +275,9 @@ function removeAlphaFromCopy(imageData: ImageData | null): ImageData {
   return new ImageData(data, imageData.width, imageData.height);
 }
 
-function getImagePreview(imageData: ImageData): string {
+function getImagePreview(imageData: ImageData | null): string {
+  if (!imageData) return "";
+
   const canvas = document.createElement("canvas");
   canvas.width = imageData.width;
   canvas.height = imageData.height;
@@ -282,7 +287,9 @@ function getImagePreview(imageData: ImageData): string {
   return canvas.toDataURL();
 }
 
-function generateAlphaPreview(imageData: ImageData): string {
+function generateAlphaPreview(imageData: ImageData | null): string {
+  if (!imageData) return "";
+
   const { width, height, data } = imageData;
   const alphaCanvas = document.createElement("canvas");
   alphaCanvas.width = width;

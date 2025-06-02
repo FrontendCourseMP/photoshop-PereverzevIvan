@@ -5,13 +5,15 @@ import { ImageContext } from "../../contexts/ImageContext/ImageContext";
 import { open_icon } from "../../assets/images";
 import { InterpolationModal } from "./components/ImterpolationModal/InterpolationModal";
 import { FillImageColorModal } from "./components/FillImageColorModal/FillImageColorModal";
+import { CorrectionModal } from "../LayerPanel/components/CorrectionModal/CorrectionModal";
 
 export function ActionsMenu() {
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const { loadImage, clearImage } = useContext(ImageContext);
+  const { loadImage } = useContext(ImageContext);
   const [isOpenInterpolation, setIsOpenInterpolation] = useState(false);
   const [isOpenFillLayerWithColor, setIsOpenFillLayerWithColor] =
     useState(false);
+  const [isOpenCorrection, setIsOpenCorrection] = useState(false);
 
   function handleFileOpen() {
     if (inputRef.current) inputRef.current.click();
@@ -56,6 +58,12 @@ export function ActionsMenu() {
             setIsOpenFillLayerWithColor(true);
           },
         },
+        {
+          text: "Градационная коррекция",
+          onClick: () => {
+            setIsOpenCorrection(true);
+          },
+        },
       ],
     },
   ];
@@ -76,6 +84,10 @@ export function ActionsMenu() {
       <InterpolationModal
         isOpen={isOpenInterpolation}
         onClose={() => setIsOpenInterpolation(false)}
+      />
+      <CorrectionModal
+        isOpen={isOpenCorrection}
+        onClose={() => setIsOpenCorrection(false)}
       />
 
       <div className={s.actionsMenu}>

@@ -19,6 +19,22 @@ export function getChannelHistogram(
   return histogram;
 }
 
+/** Создает гистограммы R, G и B из imageData. */
+export function getRGBHistograms(imageData: ImageData) {
+  const { data } = imageData;
+  const r = new Array(256).fill(0);
+  const g = new Array(256).fill(0);
+  const b = new Array(256).fill(0);
+
+  for (let i = 0; i < data.length; i += 4) {
+    r[data[i]]++;
+    g[data[i + 1]]++;
+    b[data[i + 2]]++;
+  }
+
+  return { r, g, b };
+}
+
 /**
  * Создает гистограмму градаций серого, усредняя R, G и B.
  */
