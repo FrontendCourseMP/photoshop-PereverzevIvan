@@ -58,9 +58,10 @@ export function LayerInfo(props: TLayerInfoProps) {
         {props.layer.preview != "" && (
           <img src={props.layer.preview} alt="preview" />
         )}
-        {props.layer.alphaChannelPreview != "" && (
-          <img src={props.layer.alphaChannelPreview} alt="alpha preview" />
-        )}
+        {props.layer.hasAlphaChannel &&
+          props.layer.alphaChannelPreview != "" && (
+            <img src={props.layer.alphaChannelPreview} alt="alpha preview" />
+          )}
       </div>
 
       {/* Изменение прозрачности */}

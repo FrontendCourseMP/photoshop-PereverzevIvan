@@ -4,7 +4,7 @@ type Point = { input: number; output: number };
 
 type CurvesEditorProps = {
   histogram: number[];
-  channel: "r" | "g" | "b" | "a";
+  channel: "r" | "g" | "b" | "l" | "a";
   controlPoints: [Point, Point];
   onChange: (points: [Point, Point]) => void;
 };
@@ -27,8 +27,10 @@ export const CurvesEditor: React.FC<CurvesEditorProps> = ({
         return "green";
       case "b":
         return "blue";
-      case "a":
+      case "l":
         return "gray";
+      case "a":
+        return "black";
     }
   };
 
@@ -49,7 +51,21 @@ export const CurvesEditor: React.FC<CurvesEditorProps> = ({
   ) => {
     const clamped = Math.max(0, Math.min(255, value));
     const newPoints: [Point, Point] = [...controlPoints] as [Point, Point];
-    newPoints[index] = { ...newPoints[index], [field]: clamped };
+
+    // Обновим точку, затем проверим на допустимость
+    const updatedPoint = { ...newPoints[index], [field]: clamped };
+
+    if (field === "input") {
+      if (
+        (index === 0 && updatedPoint.input > newPoints[1].input - 1) ||
+        (index === 1 && updatedPoint.input < newPoints[0].input + 1)
+      ) {
+        // Не даём p1.input > p2.input и наоборот
+        return;
+      }
+    }
+
+    newPoints[index] = updatedPoint;
     onChange(newPoints);
   };
 

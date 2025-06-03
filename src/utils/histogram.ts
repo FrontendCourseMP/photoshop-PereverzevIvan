@@ -49,3 +49,17 @@ export function getGrayscaleHistogram(imageData: ImageData): number[] {
 
   return histogram;
 }
+
+/** Создает гистограмму альфа-канала из imageData. */
+export function getAlphaHistogram(imageData: ImageData): number[] {
+  const histogram = new Array(256).fill(0);
+  const data = imageData.data;
+  const length = data.length;
+
+  for (let i = 3; i < length; i += 4) {
+    const alpha = data[i]; // A-канал
+    histogram[alpha]++;
+  }
+
+  return histogram;
+}

@@ -1,10 +1,11 @@
 type Point = { input: number; output: number };
 
 type CorrectionParams = {
-  r?: [Point, Point]; // если нет — канал не трогаем
-  g?: [Point, Point];
-  b?: [Point, Point];
-  gray?: [Point, Point];
+  r?: [Point, Point]; // Красный канал
+  g?: [Point, Point]; // Зелёный канал
+  b?: [Point, Point]; // Синий канал
+  gray?: [Point, Point]; // Градационная коррекция по яркости
+  alpha?: [Point, Point]; // альфа-канал
 };
 
 export function applyCurvesCorrection(
@@ -33,6 +34,7 @@ export function applyCurvesCorrection(
   const lutG = params.g ? buildLUT(params.g) : null;
   const lutB = params.b ? buildLUT(params.b) : null;
   const lutGray = params.gray ? buildLUT(params.gray) : null;
+  const lutAlpha = params.alpha ? buildLUT(params.alpha) : null;
 
   for (let i = 0; i < data.length; i += 4) {
     const r = data[i];
@@ -52,7 +54,7 @@ export function applyCurvesCorrection(
       result.data[i + 2] = lutB ? lutB[b] : b;
     }
 
-    result.data[i + 3] = a; // альфа-канал не трогаем
+    result.data[i + 3] = lutAlpha ? lutAlpha[a] : a;
   }
 
   return result;
