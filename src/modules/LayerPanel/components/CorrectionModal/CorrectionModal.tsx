@@ -89,7 +89,6 @@ export function CorrectionModal(props: InterpolationModalProps) {
   }
 
   function applyCorrection() {
-    console.log(activeLayerId);
     if (!imageData) return;
     if (activeLayerId === null) return;
 

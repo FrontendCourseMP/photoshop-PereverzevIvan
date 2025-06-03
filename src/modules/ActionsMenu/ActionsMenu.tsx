@@ -6,6 +6,7 @@ import { open_icon } from "../../assets/images";
 import { InterpolationModal } from "./components/ImterpolationModal/InterpolationModal";
 import { FillImageColorModal } from "./components/FillImageColorModal/FillImageColorModal";
 import { CorrectionModal } from "../LayerPanel/components/CorrectionModal/CorrectionModal";
+import { FilterKernelModal } from "./components/FilterModal/FilterModal";
 
 export function ActionsMenu() {
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -14,6 +15,7 @@ export function ActionsMenu() {
   const [isOpenFillLayerWithColor, setIsOpenFillLayerWithColor] =
     useState(false);
   const [isOpenCorrection, setIsOpenCorrection] = useState(false);
+  const [isOpenFilterKernel, setIsOpenFilterKernel] = useState(false);
 
   function handleFileOpen() {
     if (inputRef.current) inputRef.current.click();
@@ -64,6 +66,12 @@ export function ActionsMenu() {
             setIsOpenCorrection(true);
           },
         },
+        {
+          text: "Фильтрация ядром",
+          onClick: () => {
+            setIsOpenFilterKernel(true);
+          },
+        },
       ],
     },
   ];
@@ -88,6 +96,10 @@ export function ActionsMenu() {
       <CorrectionModal
         isOpen={isOpenCorrection}
         onClose={() => setIsOpenCorrection(false)}
+      />
+      <FilterKernelModal
+        isOpen={isOpenFilterKernel}
+        onClose={() => setIsOpenFilterKernel(false)}
       />
 
       <div className={s.actionsMenu}>
