@@ -7,6 +7,7 @@ import { InterpolationModal } from "./components/ImterpolationModal/Interpolatio
 import { FillImageColorModal } from "./components/FillImageColorModal/FillImageColorModal";
 import { CorrectionModal } from "../LayerPanel/components/CorrectionModal/CorrectionModal";
 import { FilterKernelModal } from "./components/FilterModal/FilterModal";
+import { SaveImageModal } from "./components/SaveImageModal/SaveImageModal";
 
 export function ActionsMenu() {
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -16,6 +17,7 @@ export function ActionsMenu() {
     useState(false);
   const [isOpenCorrection, setIsOpenCorrection] = useState(false);
   const [isOpenFilterKernel, setIsOpenFilterKernel] = useState(false);
+  const [isOpenSaveImage, setIsOpenSaveImage] = useState(false);
 
   function handleFileOpen() {
     if (inputRef.current) inputRef.current.click();
@@ -41,6 +43,12 @@ export function ActionsMenu() {
           text: "Загрузить изображение",
           icon: open_icon,
           onClick: handleFileOpen,
+        },
+        {
+          text: "Сохранить изображение",
+          onClick: () => {
+            setIsOpenSaveImage(true);
+          },
         },
       ],
     },
@@ -100,6 +108,10 @@ export function ActionsMenu() {
       <FilterKernelModal
         isOpen={isOpenFilterKernel}
         onClose={() => setIsOpenFilterKernel(false)}
+      />
+      <SaveImageModal
+        isOpen={isOpenSaveImage}
+        onClose={() => setIsOpenSaveImage(false)}
       />
 
       <div className={s.actionsMenu}>

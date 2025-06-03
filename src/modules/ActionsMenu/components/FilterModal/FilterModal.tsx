@@ -1,10 +1,13 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import s from "./FilterModal.module.scss";
 import {
   applyConvolution,
   ConvolutionPresets,
 } from "../../../../utils/convolution";
-import { useLayers } from "../../../../contexts/LayersContext/LayersContext";
+import {
+  TLayer,
+  useLayers,
+} from "../../../../contexts/LayersContext/LayersContext";
 import { imageDataToURL } from "../../../../utils/imageDataToURL";
 import { Modal } from "../../../../components/ModalWindow/ModalWindow";
 
@@ -47,16 +50,17 @@ export function FilterKernelModal({ isOpen, onClose }: FilterKernelModalProps) {
 
   const [previewImageURL, setPreviewImageURL] = useState<string | null>(null);
   const [mode, setMode] = useState<"rgb" | "alpha">("rgb");
+  const [layer, setLayer] = useState<TLayer | null>(null);
+  const [imageData, setImageData] = useState<ImageData | null>(null);
 
   const { activeLayerId, layers, setOriginalImageData } = useLayers();
 
   function createPreview() {
     if (activeLayerId !== null) {
-      const layer = layers[activeLayerId];
-      if (!layer?.originalImageData) return;
+      if (!imageData) return;
 
       const newImage = applyConvolution(
-        layer.originalImageData,
+        imageData,
         mode === "rgb" ? matrixRGB : matrixAlpha,
         mode,
       );
@@ -103,11 +107,10 @@ export function FilterKernelModal({ isOpen, onClose }: FilterKernelModalProps) {
 
   function handleApply() {
     if (previewImageURL && activeLayerId !== null) {
-      const layer = layers[activeLayerId];
-      if (!layer?.originalImageData) return;
+      if (!imageData) return;
 
       const newImage = applyConvolution(
-        layer.originalImageData,
+        imageData,
         mode === "rgb" ? matrixRGB : matrixAlpha,
         mode,
       );
@@ -116,13 +119,34 @@ export function FilterKernelModal({ isOpen, onClose }: FilterKernelModalProps) {
     }
   }
 
+  useEffect(() => {
+    if (layer) {
+      setImageData(layer.originalImageData);
+    } else {
+      setImageData(null);
+    }
+  }, [layer]);
+
+  useEffect(() => {
+    if (activeLayerId !== null) {
+      const layer = layers.find((l) => l.id === activeLayerId);
+      setLayer(layer || null);
+    } else {
+      setLayer(null);
+    }
+  }, [activeLayerId, layers]);
+
+  useEffect(() => {
+    handleReset();
+  }, []);
+
   const matrix = mode === "rgb" ? matrixRGB : matrixAlpha;
   const selectedPreset =
     mode === "rgb" ? selectedPresetRGB : selectedPresetAlpha;
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Фильтрация ядром">
-      {activeLayerId === null || !layers[activeLayerId]?.originalImageData ? (
+      {activeLayerId === null || !imageData ? (
         <p>Нет активного слоя</p>
       ) : (
         <div className={s.wrapper}>

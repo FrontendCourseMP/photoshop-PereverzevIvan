@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Modal } from "../../../../components/ModalWindow/ModalWindow";
-import { useLayers } from "../../../../contexts/LayersContext/LayersContext";
+import {
+  TLayer,
+  useLayers,
+} from "../../../../contexts/LayersContext/LayersContext";
 import { CurvesEditor } from "../CurvesEditor/CurvesEditor";
 import {
   getAlphaHistogram,
@@ -22,8 +25,8 @@ type Point = { input: number; output: number };
 export function CorrectionModal(props: InterpolationModalProps) {
   const title = "Градационная коррекция";
   const { layers, activeLayerId, setOriginalImageData } = useLayers();
-  const layer = activeLayerId !== null ? layers[activeLayerId] : null;
-  const imageData = layer?.originalImageData || null;
+  const [layer, setLayer] = useState<TLayer | null>(null);
+  const [imageData, setImageData] = useState<ImageData | null>(null);
   const [imagePreviewURL, setImagePreviewURL] = useState<string | null>(null);
 
   const [curveR, setCurveR] = useState<[Point, Point]>([
@@ -135,6 +138,23 @@ export function CorrectionModal(props: InterpolationModalProps) {
 
     setImagePreviewURL(null);
   }
+
+  useEffect(() => {
+    if (activeLayerId !== null) {
+      const layer = layers.find((l) => l.id === activeLayerId);
+      setLayer(layer || null);
+    } else {
+      setLayer(null);
+    }
+  }, [activeLayerId, layers]);
+
+  useEffect(() => {
+    if (layer) {
+      setImageData(layer.originalImageData);
+    } else {
+      setImageData(null);
+    }
+  }, [layer]);
 
   useEffect(() => {
     if (props.isOpen) {
