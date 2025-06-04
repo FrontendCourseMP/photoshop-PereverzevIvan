@@ -5,9 +5,17 @@ import { ImageContext } from "../../contexts/ImageContext/ImageContext";
 import { open_icon } from "../../assets/images";
 import { InterpolationModal } from "./components/ImterpolationModal/InterpolationModal";
 import { FillImageColorModal } from "./components/FillImageColorModal/FillImageColorModal";
-import { CorrectionModal } from "../LayerPanel/components/CorrectionModal/CorrectionModal";
+// import { CorrectionModal } from "../LayerPanel/components/CorrectionModal/CorrectionModal";
 import { FilterKernelModal } from "./components/FilterModal/FilterModal";
 import { SaveImageModal } from "./components/SaveImageModal/SaveImageModal";
+import React, { Suspense } from "react";
+
+const LazyCorrectionModal = React.lazy(async () => {
+  const module = await import(
+    "../LayerPanel/components/CorrectionModal/CorrectionModal"
+  );
+  return { default: module.CorrectionModal };
+});
 
 export function ActionsMenu() {
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -101,10 +109,6 @@ export function ActionsMenu() {
         isOpen={isOpenInterpolation}
         onClose={() => setIsOpenInterpolation(false)}
       />
-      <CorrectionModal
-        isOpen={isOpenCorrection}
-        onClose={() => setIsOpenCorrection(false)}
-      />
       <FilterKernelModal
         isOpen={isOpenFilterKernel}
         onClose={() => setIsOpenFilterKernel(false)}
@@ -113,6 +117,13 @@ export function ActionsMenu() {
         isOpen={isOpenSaveImage}
         onClose={() => setIsOpenSaveImage(false)}
       />
+
+      <Suspense fallback={<div>Загрузка…</div>}>
+        <LazyCorrectionModal
+          isOpen={isOpenCorrection}
+          onClose={() => setIsOpenCorrection(false)}
+        />
+      </Suspense>
 
       <div className={s.actionsMenu}>
         {actionsGroups.map((group, index) => (

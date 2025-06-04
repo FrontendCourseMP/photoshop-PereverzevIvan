@@ -1,19 +1,28 @@
 import { useContext, useState } from "react";
 import { Modal } from "../../../../components/ModalWindow/ModalWindow";
 import { ImageContext } from "../../../../contexts/ImageContext/ImageContext";
+import { saveGB7 } from "../../../../utils/SaveGB7";
 
 type SaveImageModalProps = {
   isOpen: boolean;
   onClose: () => void;
 };
 
+type FileType = "png" | "jpeg" | "gb7";
+
 export function SaveImageModal({ isOpen, onClose }: SaveImageModalProps) {
   const [fileName, setFileName] = useState("image");
-  const [fileType, setFileType] = useState<"png" | "jpeg">("png");
+  const [fileType, setFileType] = useState<FileType>("png");
   const { imageData } = useContext(ImageContext);
+  const [gb7UseMask, setGb7UseMask] = useState(false);
 
   function handleSave() {
     if (!imageData) return;
+
+    if (fileType === "gb7") {
+      saveGB7(imageData, fileName, gb7UseMask);
+      return;
+    }
 
     const canvas = document.createElement("canvas");
     canvas.width = imageData.width;
@@ -57,13 +66,24 @@ export function SaveImageModal({ isOpen, onClose }: SaveImageModalProps) {
             Тип файла:
             <select
               value={fileType}
-              onChange={(e) => setFileType(e.target.value as "png" | "jpeg")}
+              onChange={(e) => setFileType(e.target.value as FileType)}
               style={{ width: "100%" }}
             >
               <option value="png">PNG</option>
               <option value="jpeg">JPEG</option>
+              <option value="gb7">GrayBit-7 (.gb7)</option>
             </select>
           </label>
+          {fileType === "gb7" && (
+            <label>
+              <input
+                type="checkbox"
+                checked={gb7UseMask}
+                onChange={(e) => setGb7UseMask(e.target.checked)}
+              />
+              Использовать маску
+            </label>
+          )}
           <button onClick={handleSave}>Сохранить</button>
         </div>
       )}
