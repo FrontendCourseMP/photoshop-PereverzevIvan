@@ -36,8 +36,7 @@ export function FillImageColorModal(props: InterpolationModalProps) {
           <p>Текущий слой: {layers[activeLayerId]?.id}</p>
           <p>Выберите цвет</p>
           <ChromePicker
-            color={color}
-            alpha={0}
+            color={color || "#000000"}
             onChange={(e) => setColor(e.hex)}
           />
           <button onClick={onSubmit}>Применить</button>

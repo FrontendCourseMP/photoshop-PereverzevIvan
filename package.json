@@ -3,7 +3,6 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://PereverzevIvan.github.io/pereverzev-photoshop",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
@@ -32,6 +31,7 @@
     "@testing-library/jest-dom": "^6.6.3",
     "@types/node": "^22.14.1",
     "@types/react": "^19.0.10",
+    "@types/react-color": "^3.0.13",
     "@types/react-dom": "^19.0.4",
     "@vitejs/plugin-react": "^4.3.4",
     "eslint": "^9.21.0",

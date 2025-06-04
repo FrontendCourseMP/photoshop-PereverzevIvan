@@ -1,5 +1,6 @@
 import clsx from "clsx";
 import {
+  BlendMode,
   TLayer,
   useLayers,
 } from "../../../../contexts/LayersContext/LayersContext";
@@ -79,7 +80,9 @@ export function LayerInfo(props: TLayerInfoProps) {
 
       {/* Изменение режима наложения */}
       <select
-        onChange={(e) => changeBlendMode(props.layer.id, e.target.value)}
+        onChange={(e) =>
+          changeBlendMode(props.layer.id, e.target.value as BlendMode)
+        }
         name="blendMode"
         value={props.layer.blendMode}
       >

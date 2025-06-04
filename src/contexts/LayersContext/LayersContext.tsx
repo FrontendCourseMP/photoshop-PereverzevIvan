@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 
-type BlendMode = "normal" | "multiply" | "screen" | "overlay";
+export type BlendMode = "normal" | "multiply" | "screen" | "overlay";
 
 /** создание пустого слоя */
 export function newEmptyLayer(): TLayer {
