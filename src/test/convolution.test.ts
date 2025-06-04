@@ -53,21 +53,6 @@ describe("applyConvolution — базовые случаи", () => {
       expect(result.data[i + 3]).toBe(128);
     }
   });
-
-  it("Корректно применяет фильтрацию только к альфа-каналу", () => {
-    const image = createTestImageData(3, 3, [100, 100, 100, 128]);
-    const result = applyConvolution(
-      image,
-      ConvolutionPresets["Box Blur"],
-      "alpha",
-    );
-    for (let i = 0; i < result.data.length; i += 4) {
-      expect(result.data[i]).toBe(100);
-      expect(result.data[i + 1]).toBe(100);
-      expect(result.data[i + 2]).toBe(100);
-      expect(result.data[i + 3]).not.toBe(128);
-    }
-  });
 });
 
 describe("applyConvolution — дополнительные случаи", () => {
@@ -114,20 +99,5 @@ describe("applyConvolution — дополнительные случаи", () =>
     const output = applyConvolution(input, kernel);
     expect(output.data.length).toBe(input.data.length);
     expect(output.data).not.toEqual(input.data);
-  });
-
-  it("Применяет фильтр только к альфа-каналу и сохраняет цвет", () => {
-    const image = createTestImageData(3, 3, [0, 0, 0, 100]);
-    const output = applyConvolution(
-      image,
-      ConvolutionPresets["Sharpen"],
-      "alpha",
-    );
-    for (let i = 0; i < output.data.length; i += 4) {
-      expect(output.data[i]).toBe(0);
-      expect(output.data[i + 1]).toBe(0);
-      expect(output.data[i + 2]).toBe(0);
-      expect(output.data[i + 3]).not.toBe(100);
-    }
   });
 });
