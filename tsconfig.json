@@ -5,6 +5,8 @@
     { "path": "./tsconfig.node.json" }
   ],
 
+  "lib": ["DOM", "DOM.Iterable", "ESNext", "WebWorker"],
+
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {

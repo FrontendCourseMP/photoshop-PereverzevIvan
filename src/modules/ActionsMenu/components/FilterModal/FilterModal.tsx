@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import s from "./FilterModal.module.scss";
 import {
-  applyConvolution,
+  // applyConvolution,
   ConvolutionPresets,
 } from "../../../../utils/convolution";
 import {
@@ -10,6 +10,7 @@ import {
 } from "../../../../contexts/LayersContext/LayersContext";
 import { imageDataToURL } from "../../../../utils/imageDataToURL";
 import { Modal } from "../../../../components/ModalWindow/ModalWindow";
+import ConvolutionWorker from "../../../../workers/convolution.worker?worker";
 
 type FilterKernelModalProps = {
   isOpen: boolean;
@@ -48,6 +49,8 @@ export function FilterKernelModal({ isOpen, onClose }: FilterKernelModalProps) {
     ConvolutionPresets["Identity"],
   );
 
+  const workerRef = useRef<Worker | null>(null);
+
   const [previewImageURL, setPreviewImageURL] = useState<string | null>(null);
   const [mode, setMode] = useState<"rgb" | "alpha">("rgb");
   const [layer, setLayer] = useState<TLayer | null>(null);
@@ -56,16 +59,12 @@ export function FilterKernelModal({ isOpen, onClose }: FilterKernelModalProps) {
   const { activeLayerId, layers, setOriginalImageData } = useLayers();
 
   function createPreview() {
-    if (activeLayerId !== null) {
-      if (!imageData) return;
-
-      const newImage = applyConvolution(
+    if (activeLayerId !== null && imageData && workerRef.current) {
+      workerRef.current.postMessage({
         imageData,
-        mode === "rgb" ? matrixRGB : matrixAlpha,
+        kernel: mode === "rgb" ? matrixRGB : matrixAlpha,
         mode,
-      );
-
-      setPreviewImageURL(imageDataToURL(newImage));
+      });
     }
   }
 
@@ -106,18 +105,41 @@ export function FilterKernelModal({ isOpen, onClose }: FilterKernelModalProps) {
   }
 
   function handleApply() {
-    if (previewImageURL && activeLayerId !== null) {
-      if (!imageData) return;
+    if (previewImageURL && activeLayerId !== null && imageData) {
+      const worker = new ConvolutionWorker();
 
-      const newImage = applyConvolution(
+      worker.postMessage({
         imageData,
-        mode === "rgb" ? matrixRGB : matrixAlpha,
+        kernel: mode === "rgb" ? matrixRGB : matrixAlpha,
         mode,
-      );
+      });
 
-      setOriginalImageData(activeLayerId, newImage);
+      worker.onmessage = (e) => {
+        const newImage: ImageData = e.data;
+        setOriginalImageData(activeLayerId, newImage);
+        worker.terminate();
+      };
+
+      worker.onerror = (err) => {
+        console.error("Worker error:", err);
+        worker.terminate();
+      };
     }
   }
+
+  useEffect(() => {
+    const worker = new ConvolutionWorker();
+    workerRef.current = worker;
+
+    worker.onmessage = (e: any) => {
+      const result: ImageData = e.data;
+      setPreviewImageURL(imageDataToURL(result));
+    };
+
+    return () => {
+      worker.terminate();
+    };
+  }, []);
 
   useEffect(() => {
     if (layer) {
@@ -138,7 +160,7 @@ export function FilterKernelModal({ isOpen, onClose }: FilterKernelModalProps) {
 
   useEffect(() => {
     handleReset();
-  }, []);
+  }, [isOpen]);
 
   const matrix = mode === "rgb" ? matrixRGB : matrixAlpha;
   const selectedPreset =
