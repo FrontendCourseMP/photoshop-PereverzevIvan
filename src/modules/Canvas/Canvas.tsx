@@ -193,7 +193,6 @@ export function CanvasModule() {
     const min = -imageWidth + 100;
     const max = canvasWidth - 100;
     setScrollX((offsetX - min) / (max - min));
-    console.log((offsetX - min) / (max - min));
   }, [offsetX]);
 
   useEffect(() => {

@@ -1,7 +1,8 @@
-import { useContext } from "react";
+import { useContext, useEffect, useState } from "react";
 import s from "./StatusBar.module.scss";
 import { ImageContext } from "../../contexts/ImageContext/ImageContext";
 import { CScales } from "../../utils/scaleImage";
+import { TLayer, useLayers } from "../../contexts/LayersContext/LayersContext";
 
 export function StatusBar() {
   const {
@@ -14,10 +15,14 @@ export function StatusBar() {
     setRenderMethod,
   } = useContext(ImageContext);
 
+  const { activeLayerId, layers } = useLayers();
+  const [currentLayer, setCurrentLayer] = useState<TLayer | null>(null);
+
   function handleChangeScale(event: React.ChangeEvent<HTMLSelectElement>) {
     const value = parseFloat(event.target.value);
     setScaleValue(value);
   }
+
   function handleChangeRenderMethod(
     event: React.ChangeEvent<HTMLSelectElement>,
   ) {
@@ -25,18 +30,30 @@ export function StatusBar() {
     setRenderMethod(value);
   }
 
+  useEffect(() => {
+    if (activeLayerId !== null) {
+      setCurrentLayer(layers[activeLayerId]);
+    }
+  }, [activeLayerId, layers]);
+
   return (
     <>
       <div className={s.statusBar}>
         <p className={s.property} title={`Размер: ${width}x${height}`}>
           <span className={s.propertyName}>Размер: </span>
           <span className={s.propertyValue}>
-            {width}x{height}
+            {currentLayer && currentLayer.originalImageData
+              ? `${currentLayer.originalImageData?.width}x${currentLayer.originalImageData?.height}`
+              : "Нет данных"}
           </span>
         </p>
         <p className={s.property} title={`Глубина цвета: ${colorDepth} bit`}>
           <span className={s.propertyName}>Глубина цвета: </span>
-          <span className={s.propertyValue}>{colorDepth} bit</span>
+          <span className={s.propertyValue}>
+            {currentLayer && currentLayer.originalImageData
+              ? currentLayer.colorDepth
+              : "Нет данных"}
+          </span>
         </p>
 
         <select

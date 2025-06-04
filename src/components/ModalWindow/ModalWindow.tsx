@@ -55,13 +55,13 @@ export function Modal({ isOpen, onClose, children, title }: ModalProps) {
 
   return (
     <dialog ref={dialogRef} className={s.modal}>
+      <button type="button" onClick={onClose} className={s.closeButton}>
+        <img src={cross_icon} alt="Закрыть" />
+      </button>
       <div className={s.modalContent}>
         {title && <p className={s.modalTitle}>{title}</p>}
         {children}
       </div>
-      <button type="button" onClick={onClose} className={s.closeButton}>
-        <img src={cross_icon} alt="Закрыть" />
-      </button>
     </dialog>
   );
 }

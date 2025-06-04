@@ -4,11 +4,28 @@ import { ActionsGroup } from "./components/ActionGroup/ActionsGroup";
 import { ImageContext } from "../../contexts/ImageContext/ImageContext";
 import { open_icon } from "../../assets/images";
 import { InterpolationModal } from "./components/ImterpolationModal/InterpolationModal";
+import { FillImageColorModal } from "./components/FillImageColorModal/FillImageColorModal";
+// import { CorrectionModal } from "../LayerPanel/components/CorrectionModal/CorrectionModal";
+import { FilterKernelModal } from "./components/FilterModal/FilterModal";
+import { SaveImageModal } from "./components/SaveImageModal/SaveImageModal";
+import React, { Suspense } from "react";
+
+const LazyCorrectionModal = React.lazy(async () => {
+  const module = await import(
+    "../LayerPanel/components/CorrectionModal/CorrectionModal"
+  );
+  return { default: module.CorrectionModal };
+});
 
 export function ActionsMenu() {
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const { loadImage, clearImage } = useContext(ImageContext);
+  const { loadImage } = useContext(ImageContext);
   const [isOpenInterpolation, setIsOpenInterpolation] = useState(false);
+  const [isOpenFillLayerWithColor, setIsOpenFillLayerWithColor] =
+    useState(false);
+  const [isOpenCorrection, setIsOpenCorrection] = useState(false);
+  const [isOpenFilterKernel, setIsOpenFilterKernel] = useState(false);
+  const [isOpenSaveImage, setIsOpenSaveImage] = useState(false);
 
   function handleFileOpen() {
     if (inputRef.current) inputRef.current.click();
@@ -35,10 +52,16 @@ export function ActionsMenu() {
           icon: open_icon,
           onClick: handleFileOpen,
         },
+        {
+          text: "Сохранить изображение",
+          onClick: () => {
+            setIsOpenSaveImage(true);
+          },
+        },
       ],
     },
     {
-      title: "Холст",
+      title: "Слой",
       items: [
         {
           text: "Интерполяция",
@@ -48,9 +71,21 @@ export function ActionsMenu() {
           },
         },
         {
-          text: "Очистить холст",
+          text: "Заливка цветом",
           onClick: () => {
-            clearImage();
+            setIsOpenFillLayerWithColor(true);
+          },
+        },
+        {
+          text: "Градационная коррекция",
+          onClick: () => {
+            setIsOpenCorrection(true);
+          },
+        },
+        {
+          text: "Фильтрация ядром",
+          onClick: () => {
+            setIsOpenFilterKernel(true);
           },
         },
       ],
@@ -66,10 +101,29 @@ export function ActionsMenu() {
         style={{ display: "none" }}
         onChange={handleFileChange}
       />
+      <FillImageColorModal
+        isOpen={isOpenFillLayerWithColor}
+        onClose={() => setIsOpenFillLayerWithColor(false)}
+      />
       <InterpolationModal
         isOpen={isOpenInterpolation}
         onClose={() => setIsOpenInterpolation(false)}
       />
+      <FilterKernelModal
+        isOpen={isOpenFilterKernel}
+        onClose={() => setIsOpenFilterKernel(false)}
+      />
+      <SaveImageModal
+        isOpen={isOpenSaveImage}
+        onClose={() => setIsOpenSaveImage(false)}
+      />
+
+      <Suspense fallback={<div>Загрузка…</div>}>
+        <LazyCorrectionModal
+          isOpen={isOpenCorrection}
+          onClose={() => setIsOpenCorrection(false)}
+        />
+      </Suspense>
 
       <div className={s.actionsMenu}>
         {actionsGroups.map((group, index) => (

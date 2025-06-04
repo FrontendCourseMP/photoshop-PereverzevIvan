@@ -3,27 +3,35 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://PereverzevIvan.github.io/pereverzev-photoshop",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "predeploy": "npm run build",
-    "deploy": "gh-pages -d dist"
+    "deploy": "gh-pages -d dist",
+    "test": "vitest"
   },
   "dependencies": {
+    "@testing-library/react": "^16.3.0",
+    "canvas": "^3.1.0",
     "clsx": "^2.1.1",
+    "jest-dom": "^4.0.0",
+    "jsdom": "^26.1.0",
     "react": "^19.0.0",
+    "react-color": "^2.19.3",
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.56.1",
     "react-toastify": "^11.0.5",
-    "ts-node": "^10.9.2"
+    "ts-node": "^10.9.2",
+    "vitest": "^3.2.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",
+    "@testing-library/jest-dom": "^6.6.3",
     "@types/node": "^22.14.1",
     "@types/react": "^19.0.10",
+    "@types/react-color": "^3.0.13",
     "@types/react-dom": "^19.0.4",
     "@vitejs/plugin-react": "^4.3.4",
     "eslint": "^9.21.0",

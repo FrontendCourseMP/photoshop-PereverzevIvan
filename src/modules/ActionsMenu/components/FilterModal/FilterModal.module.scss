@@ -1,0 +1,35 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  align-items: center;
+}
+
+.kernelGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 60px);
+  gap: 5px;
+
+  input {
+    width: 60px;
+    padding: 5px;
+    text-align: center;
+  }
+}
+
+.buttonRow {
+  display: flex;
+  gap: 10px;
+
+  button {
+    padding: 6px 12px;
+    cursor: pointer;
+  }
+}
+
+.previewImage {
+  width: 100%;
+  height: 100%;
+  max-width: 70%;
+  object-fit: contain;
+}
